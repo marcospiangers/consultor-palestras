@@ -493,8 +493,8 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
     return keywords;
   }
 
-  // ─── GEMINI CALL ─────────────────────────────────────────────────
-  async function callGemini(userMessage) {
+  // ─── OPENROUTER CALL ────────────────────────────────────────────
+  async function callAI(userMessage) {
     const speakers = await loadSpeakers();
     const keywords = extractKeywords([...history, { parts: [{ text: userMessage }] }]);
     
@@ -619,7 +619,7 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
     showTyping();
 
     try {
-      const response = await callGemini(text);
+      const response = await callAI(text);
 
       // Check for email trigger
       const emailMatch = response.match(/##SEND_EMAIL##([\s\S]*?)##END_EMAIL##/);
