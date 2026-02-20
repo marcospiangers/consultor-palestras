@@ -398,7 +398,7 @@
   // ─── CONFIG ───────────────────────────────────────────────────────
   var SUPABASE_URL = 'https://jmgkaeiynkklbnkgwimb.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_gdIe5v55isrPCHoXFqEuIw_FOPFBRvl';
-  var GEMINI_KEY   = 'AIzaSyBA0GzNoaKUCEN3EtyN1wlJMuMtEk4seXE';
+  var GEMINI_KEY   = 'AIzaSyD_NRAtUKLOwwI_8L5VYfuhIiN_Qtj3srU';
   var EMAILJS_SERVICE  = 'service_m09nl3n';
   var EMAILJS_TEMPLATE = 'template_suld3q8';
   var EMAILJS_PUBLIC   = 'LGrr9Eg3a0LHS2tIg';
@@ -463,11 +463,11 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
   // ─── LOAD SPEAKERS ────────────────────────────────────────────────
   async function loadSpeakers() {
     if (speakerCache) return speakerCache;
-    var result = await sbClient
+    var qResult = await sbClient
       .from('Palestrantes')
       .select('Nome, "Mini Bio", "Temas/Categorias", "Cachê", Instagram, LinkedIn, "Agência(s)", "URL Perfil"');
-    if (result.error) { console.error('Supabase error:', result.error); return []; }
-    speakerCache = result.data;
+    if (qResult.error) { console.error('Supabase error:', qResult.error); return []; }
+    speakerCache = qResult.data;
     return data;
   }
 
@@ -526,7 +526,7 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
     };
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
     );
 
