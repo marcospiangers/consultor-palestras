@@ -398,7 +398,7 @@
   // ─── CONFIG ───────────────────────────────────────────────────────
   var SUPABASE_URL = 'https://jmgkaeiynkklbnkgwimb.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_gdIe5v55isrPCHoXFqEuIw_FOPFBRvl';
-  var OPENROUTER_KEY = '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';
+
   var EMAILJS_SERVICE  = 'service_m09nl3n';
   var EMAILJS_TEMPLATE = 'template_suld3q8';
   var EMAILJS_PUBLIC   = 'LGrr9Eg3a0LHS2tIg';
@@ -409,17 +409,20 @@ Seu objetivo é ajudar organizadores de eventos a encontrar o palestrante ideal 
 
 REGRAS OBRIGATÓRIAS:
 1. Responda a primeira pergunta normalmente e em seguida comece a coletar as informações do evento de forma natural, como um produtor experiente — não como um questionário.
-2. Ao informar cachês, cite sempre o valor mais alto disponível no banco de dados, citando "em torno de".
+2. Ao informar cachês, acrescente 20% ao valor original (comissão da agência). Se o cachê no banco for R$ 10.000, informe R$ 12.000.
 3. Sempre que citar um palestrante ou agência, diga: "Tenho contato direto com eles — se quiser, posso negociar em seu nome."
-4. Sempre que citar um palestrante e tiver o instagram ou linkedin dele, disponibilize o link.
-5. Seja profissional e objetivo. Não invente dados. Não pressione o cliente.
-6. Não avance para o resumo sem ter orçamento confirmado.
+4. Seja profissional e objetivo. Não invente dados. Não pressione o cliente.
+5. Não avance para o resumo sem ter orçamento confirmado.
 
 INFORMAÇÕES A COLETAR (naturalmente, ao longo da conversa):
 - Nome, empresa, e-mail e telefone do cliente
-- Data (ou período estimado) do evento e local
-- Resumo do evento
+- Data (ou período estimado) do evento
+- Cidade / formato (presencial, online, híbrido)
+- Local (se definido)
+- Perfil do público
+- Tema desejado e resultado esperado
 - Palestrante específico ou quer sugestão?
+- Duração e formato (palestra, workshop, painel, mediação)
 - Faixa de orçamento disponível
 
 SOBRE OS PALESTRANTES:
@@ -434,8 +437,13 @@ Responsável:
 E-mail:
 Telefone:
 Data do evento:
+Cidade / Formato:
 Local:
-Resumo do evento:
+Público estimado:
+Perfil do público:
+Tema / Objetivo:
+Formato da participação:
+Necessidades adicionais:
 Investimento previsto:
 
 Depois escreva: "Por favor, revise as informações. Se estiver tudo correto, responda **CONFIRMO** para que possamos seguir com a formalização."
@@ -509,29 +517,21 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
     const systemWithContext = SYSTEM_PROMPT + speakerContext;
 
 
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_KEY}`,
-        'HTTP-Referer': 'https://consultor-palestras.vercel.app',
-        'X-Title': 'Efeito Virgula'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-001',
+        system: systemWithContext,
         messages: [
-          { role: 'system', content: systemWithContext },
           ...history.map(h => ({ role: h.role === 'model' ? 'assistant' : h.role, content: h.parts[0].text })),
           { role: 'user', content: userMessage }
-        ],
-        max_tokens: 1024,
-        temperature: 0.7
+        ]
       })
     });
 
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error?.message || 'OpenRouter error');
-    return json.choices?.[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta.';
+    if (!res.ok) throw new Error(json.error || 'API error');
+    return json.content || 'Desculpe, não consegui gerar uma resposta.';
   }
 
   // ─── EMAIL ────────────────────────────────────────────────────────
