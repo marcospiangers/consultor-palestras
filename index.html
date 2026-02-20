@@ -468,7 +468,7 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
       .select('Nome, "Mini Bio", "Temas/Categorias", "Cachê", Instagram, LinkedIn, "Agência(s)", "URL Perfil"');
     if (qResult.error) { console.error('Supabase error:', qResult.error); return []; }
     speakerCache = qResult.data;
-    return data;
+    return speakerCache;
   }
 
   // Simple keyword search over speakers
