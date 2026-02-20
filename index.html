@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Efeito Vírgula — Consultor de Palestras</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0b1a;
+      --bg2: #1a1428;
+      --surface: #221b35;
+      --border: rgba(160, 120, 255, 0.15);
+      --accent: #b06aff;
+      --accent2: #7c3aed;
+      --accent-glow: rgba(176, 106, 255, 0.3);
+      --text: #f0eaf8;
+      --text-muted: #8b7fa8;
+      --user-bubble: #2d1f4e;
+      --ai-bubble: #1e1630;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow: hidden;
+    }
+
+    /* Subtle background grain */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .layout {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      color: white;
+      letter-spacing: -1px;
+    }
+
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-text span {
+      color: var(--accent);
+    }
+
+    .header-tag {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* CHAT AREA */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--surface) transparent;
+    }
+
+    .chat-area::-webkit-scrollbar { width: 4px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--surface); border-radius: 4px; }
+
+    /* Welcome state */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      text-align: center;
+      padding: 40px 20px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .welcome-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 0 40px var(--accent-glow);
+    }
+
+    .welcome h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+
+    .welcome h1 span { color: var(--accent); }
+
+    .welcome p {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 420px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .suggestion-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      max-width: 560px;
+    }
+
+    .chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(176, 106, 255, 0.08);
+    }
+
+    /* Messages */
+    .message {
+      display: flex;
+      gap: 12px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .message.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+    }
+
+    .avatar.ai {
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: white;
+    }
+
+    .avatar.user-av {
+      background: var(--user-bubble);
+      border: 1px solid var(--border);
+      color: var(--accent);
+    }
+
+    .bubble {
+      max-width: 72%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14.5px;
+      line-height: 1.65;
+    }
+
+    .message.ai .bubble {
+      background: var(--ai-bubble);
+      border: 1px solid var(--border);
+      border-top-left-radius: 4px;
+      color: var(--text);
+    }
+
+    .message.user .bubble {
+      background: var(--user-bubble);
+      border: 1px solid rgba(160, 120, 255, 0.25);
+      border-top-right-radius: 4px;
+      color: var(--text);
+    }
+
+    .bubble strong { color: var(--accent); font-weight: 600; }
+    .bubble em { color: var(--text-muted); font-style: normal; }
+
+    /* Typing indicator */
+    .typing {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .typing-dots {
+      background: var(--ai-bubble);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      border-top-left-radius: 4px;
+      padding: 14px 18px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      opacity: 0.4;
+      animation: blink 1.2s infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.4; transform: scale(1); }
+      40% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* INPUT AREA */
+    .input-area {
+      padding: 16px 0 24px;
+      flex-shrink: 0;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px 10px 10px 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    #userInput {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14.5px;
+      font-weight: 300;
+      resize: none;
+      max-height: 140px;
+      min-height: 24px;
+      line-height: 1.5;
+    }
+
+    #userInput::placeholder { color: var(--text-muted); }
+
+    #sendBtn {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    #sendBtn:hover { opacity: 0.9; transform: scale(1.05); }
+    #sendBtn:active { transform: scale(0.96); }
+    #sendBtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    #sendBtn svg { width: 16px; height: 16px; fill: white; }
+
+    .input-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 10px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <header>
+    <div class="logo">
+      <div class="logo-mark">EV</div>
+      <div class="logo-text">Efeito <span>Vírgula</span></div>
+    </div>
+    <div class="header-tag">Consultor de Palestras</div>
+  </header>
+
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">🎤</div>
+      <h1>Encontre o palestrante <span>ideal</span></h1>
+      <p>Sou seu consultor de palestras. Me conte sobre seu evento e vou sugerir os melhores palestrantes para o seu objetivo e orçamento.</p>
+      <div class="suggestion-chips">
+        <div class="chip" onclick="sendChip(this)">Preciso de um palestrante de liderança</div>
+        <div class="chip" onclick="sendChip(this)">Evento corporativo em São Paulo</div>
+        <div class="chip" onclick="sendChip(this)">Quero sugestões para SIPAT</div>
+        <div class="chip" onclick="sendChip(this)">Palestrante motivacional até R$ 20.000</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="userInput" placeholder="Descreva seu evento ou faça uma pergunta..." rows="1"></textarea>
+      <button id="sendBtn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <p class="input-hint">Efeito Vírgula · Consultoria de Palestras Corporativas</p>
+  </div>
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────────
+  const SUPABASE_URL = 'https://jmgkaeiynkklbnkgwimb.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_gdIe5v55isrPCHoXFqEuIw_FOPFBRvl';
+  const GEMINI_KEY   = 'AIzaSyBA0GzNoaKUCEN3EtyN1wlJMuMtEk4seXE';
+  const EMAILJS_SERVICE  = 'service_m09nl3n';
+  const EMAILJS_TEMPLATE = 'template_suld3q8';
+  const EMAILJS_PUBLIC   = 'LGrr9Eg3a0LHS2tIg';
+
+  const SYSTEM_PROMPT = `Você é um Consultor de Agendamento de Palestras da Efeito Vírgula, uma agência especializada em palestrantes corporativos.
+
+Seu objetivo é ajudar organizadores de eventos a encontrar o palestrante ideal e estruturar o pedido de forma profissional.
+
+REGRAS OBRIGATÓRIAS:
+1. Responda a primeira pergunta normalmente e em seguida comece a coletar as informações do evento de forma natural, como um produtor experiente — não como um questionário.
+2. Ao informar cachês, acrescente 20% ao valor original (comissão da agência). Se o cachê no banco for R$ 10.000, informe R$ 12.000.
+3. Sempre que citar um palestrante ou agência, diga: "Tenho contato direto com eles — se quiser, posso negociar em seu nome."
+4. Seja profissional e objetivo. Não invente dados. Não pressione o cliente.
+5. Não avance para o resumo sem ter orçamento confirmado.
+
+INFORMAÇÕES A COLETAR (naturalmente, ao longo da conversa):
+- Nome, empresa, e-mail e telefone do cliente
+- Data (ou período estimado) do evento
+- Cidade / formato (presencial, online, híbrido)
+- Local (se definido)
+- Perfil do público
+- Tema desejado e resultado esperado
+- Palestrante específico ou quer sugestão?
+- Duração e formato (palestra, workshop, painel, mediação)
+- Faixa de orçamento disponível
+
+SOBRE OS PALESTRANTES:
+Você tem acesso a uma base com centenas de palestrantes brasileiros. Quando sugerir nomes, use os dados fornecidos. Se o palestrante não estiver na base, pesquise o que sabe sobre ele e sinalize que os dados são estimados.
+
+QUANDO TIVER TODAS AS INFORMAÇÕES, apresente:
+
+🔎 RESUMO DO EVENTO — CONFIRMAÇÃO
+
+Empresa:
+Responsável:
+E-mail:
+Telefone:
+Data do evento:
+Cidade / Formato:
+Local:
+Público estimado:
+Perfil do público:
+Tema / Objetivo:
+Formato da participação:
+Necessidades adicionais:
+Investimento previsto:
+
+Depois escreva: "Por favor, revise as informações. Se estiver tudo correto, responda **CONFIRMO** para que possamos seguir com a formalização."
+
+QUANDO O CLIENTE RESPONDER "CONFIRMO":
+Responda exatamente: "Perfeito. Agora é comigo — vou atrás do seu orçamento completo e te mando e-mail assim que estiver tudo pronto. 🎯"
+
+Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[RESUMO COMPLETO AQUI]##END_EMAIL##`;
+
+  // ─── STATE ────────────────────────────────────────────────────────
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  emailjs.init(EMAILJS_PUBLIC);
+
+  let history = [];
+  let speakerCache = null;
+
+  // ─── LOAD SPEAKERS ────────────────────────────────────────────────
+  async function loadSpeakers() {
+    if (speakerCache) return speakerCache;
+    const { data, error } = await supabase
+      .from('Palestrantes')
+      .select('Nome, "Mini Bio", "Temas/Categorias", "Cachê", Instagram, LinkedIn, "Agência(s)", "URL Perfil"');
+    if (error) { console.error('Supabase error:', error); return []; }
+    speakerCache = data;
+    return data;
+  }
+
+  // Simple keyword search over speakers
+  function searchSpeakers(query, speakers) {
+    if (!speakers || !query) return [];
+    const q = query.toLowerCase();
+    return speakers.filter(s =>
+      (s['Nome'] || '').toLowerCase().includes(q) ||
+      (s['Temas/Categorias'] || '').toLowerCase().includes(q) ||
+      (s['Mini Bio'] || '').toLowerCase().includes(q)
+    ).slice(0, 8);
+  }
+
+  // Extract keywords from conversation for search
+  function extractKeywords(messages) {
+    const text = messages.map(m => m.parts[0].text).join(' ').toLowerCase();
+    const keywords = [];
+    const topics = ['liderança', 'motivação', 'inovação', 'vendas', 'saúde', 'tecnologia',
+      'diversidade', 'sustentabilidade', 'futebol', 'esporte', 'finanças', 'comunicação',
+      'sipat', 'segurança', 'gestão', 'cultura', 'empreendedorismo', 'ia', 'inteligência artificial'];
+    topics.forEach(t => { if (text.includes(t)) keywords.push(t); });
+    return keywords;
+  }
+
+  // ─── GEMINI CALL ─────────────────────────────────────────────────
+  async function callGemini(userMessage) {
+    const speakers = await loadSpeakers();
+    const keywords = extractKeywords([...history, { parts: [{ text: userMessage }] }]);
+    
+    let speakerContext = '';
+    if (keywords.length > 0) {
+      const results = [];
+      keywords.forEach(k => {
+        const found = searchSpeakers(k, speakers);
+        found.forEach(s => { if (!results.find(r => r.Nome === s.Nome)) results.push(s); });
+      });
+      if (results.length > 0) {
+        speakerContext = '\n\nPALESTRANTES RELEVANTES DA BASE:\n' +
+          results.map(s => {
+            const cache = s['Cachê'] || 'Cachê não informado';
+            return `• ${s.Nome} | Temas: ${s['Temas/Categorias'] || '-'} | Cachê original: ${cache} | Bio: ${(s['Mini Bio'] || '').substring(0, 200)}...`;
+          }).join('\n');
+      }
+    }
+
+    const systemWithContext = SYSTEM_PROMPT + speakerContext;
+
+    const body = {
+      system_instruction: { parts: [{ text: systemWithContext }] },
+      contents: [
+        ...history,
+        { role: 'user', parts: [{ text: userMessage }] }
+      ],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+    };
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    );
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Gemini error');
+    return json.candidates?.[0]?.content?.parts?.[0]?.text || 'Desculpe, não consegui gerar uma resposta.';
+  }
+
+  // ─── EMAIL ────────────────────────────────────────────────────────
+  async function sendEmail(summary) {
+    try {
+      await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+        message: summary,
+        to_email: 'palestras@efeitovirgula.com.br'
+      });
+      console.log('Email enviado com sucesso');
+    } catch (e) {
+      console.error('Erro ao enviar email:', e);
+    }
+  }
+
+  // ─── UI HELPERS ───────────────────────────────────────────────────
+  const chatArea = document.getElementById('chatArea');
+  const welcome  = document.getElementById('welcome');
+  const input    = document.getElementById('userInput');
+  const sendBtn  = document.getElementById('sendBtn');
+
+  function removeWelcome() {
+    if (welcome && welcome.parentNode) welcome.remove();
+  }
+
+  function appendMessage(role, text) {
+    removeWelcome();
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+    const av = document.createElement('div');
+    av.className = `avatar ${role === 'user' ? 'user-av' : 'ai'}`;
+    av.textContent = role === 'user' ? 'V' : 'EV';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = formatText(text);
+    div.appendChild(av);
+    div.appendChild(bubble);
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    removeWelcome();
+    const div = document.createElement('div');
+    div.className = 'typing';
+    div.id = 'typing';
+    div.innerHTML = `
+      <div class="avatar ai">EV</div>
+      <div class="typing-dots"><span></span><span></span><span></span></div>`;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  function hideTyping() {
+    const t = document.getElementById('typing');
+    if (t) t.remove();
+  }
+
+  function formatText(text) {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/##SEND_EMAIL##[\s\S]*?##END_EMAIL##/g, '')
+      .replace(/\n/g, '<br>');
+  }
+
+  // ─── SEND MESSAGE ─────────────────────────────────────────────────
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text || sendBtn.disabled) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    appendMessage('user', text);
+    showTyping();
+
+    try {
+      const response = await callGemini(text);
+
+      // Check for email trigger
+      const emailMatch = response.match(/##SEND_EMAIL##([\s\S]*?)##END_EMAIL##/);
+      if (emailMatch) {
+        await sendEmail(emailMatch[1].trim());
+      }
+
+      hideTyping();
+      const cleanResponse = response.replace(/##SEND_EMAIL##[\s\S]*?##END_EMAIL##/, '').trim();
+      appendMessage('ai', cleanResponse);
+
+      // Update history
+      history.push({ role: 'user', parts: [{ text }] });
+      history.push({ role: 'model', parts: [{ text: cleanResponse }] });
+
+    } catch (err) {
+      hideTyping();
+      appendMessage('ai', 'Ops, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.');
+      console.error(err);
+    }
+
+    sendBtn.disabled = false;
+    input.focus();
+  }
+
+  function sendChip(chip) {
+    input.value = chip.textContent;
+    sendMessage();
+  }
+
+  // Auto-resize textarea
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+</script>
+</body>
+</html>
