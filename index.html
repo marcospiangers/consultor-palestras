@@ -468,48 +468,42 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
     return speakerCache;
   }
 
-  // Simple keyword search over speakers
+  // Busca por múltiplos termos com score de relevância
   function searchSpeakers(query, speakers) {
     if (!speakers || !query) return [];
-    const q = query.toLowerCase();
-    return speakers.filter(s =>
-      (s['Nome'] || '').toLowerCase().includes(q) ||
-      (s['Temas/Categorias'] || '').toLowerCase().includes(q) ||
-      (s['Mini Bio'] || '').toLowerCase().includes(q)
-    ).slice(0, 8);
+    const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    return speakers
+      .map(s => {
+        const text = ((s['Nome'] || '') + ' ' + (s['Temas/Categorias'] || '') + ' ' + (s['Mini Bio'] || '')).toLowerCase();
+        const score = terms.reduce((acc, t) => acc + (text.includes(t) ? 1 : 0), 0);
+        return { ...s, _score: score };
+      })
+      .filter(s => s._score > 0)
+      .sort((a, b) => b._score - a._score)
+      .slice(0, 12);
   }
 
-  // Extract keywords from conversation for search
-  function extractKeywords(messages) {
-    const text = messages.map(m => m.parts[0].text).join(' ').toLowerCase();
-    const keywords = [];
-    const topics = ['liderança', 'motivação', 'inovação', 'vendas', 'saúde', 'tecnologia',
-      'diversidade', 'sustentabilidade', 'futebol', 'esporte', 'finanças', 'comunicação',
-      'sipat', 'segurança', 'gestão', 'cultura', 'empreendedorismo', 'ia', 'inteligência artificial'];
-    topics.forEach(t => { if (text.includes(t)) keywords.push(t); });
-    return keywords;
+  // Formatar palestrante para contexto
+  function formatSpeaker(s) {
+    const cache = s['Cachê'] || 'não informado';
+    return `• ${s.Nome} | Temas: ${s['Temas/Categorias'] || '-'} | Cachê: ${cache} | ${(s['Mini Bio'] || '').substring(0, 150)}`;
   }
 
   // ─── OPENROUTER CALL ────────────────────────────────────────────
   async function callAI(userMessage) {
     const speakers = await loadSpeakers();
-    const keywords = extractKeywords([...history, { parts: [{ text: userMessage }] }]);
-    
-    let speakerContext = '';
-    if (keywords.length > 0) {
-      const results = [];
-      keywords.forEach(k => {
-        const found = searchSpeakers(k, speakers);
-        found.forEach(s => { if (!results.find(r => r.Nome === s.Nome)) results.push(s); });
-      });
-      if (results.length > 0) {
-        speakerContext = '\n\nPALESTRANTES RELEVANTES DA BASE:\n' +
-          results.map(s => {
-            const cache = s['Cachê'] || 'Cachê não informado';
-            return `• ${s.Nome} | Temas: ${s['Temas/Categorias'] || '-'} | Cachê original: ${cache} | Bio: ${(s['Mini Bio'] || '').substring(0, 200)}...`;
-          }).join('\n');
-      }
+
+    // Busca pela mensagem atual + histórico recente
+    const searchText = [userMessage, ...history.slice(-4).map(h => h.parts[0].text)].join(' ');
+    var relevant = searchSpeakers(searchText, speakers);
+
+    // Se não achou nada relevante, manda amostra aleatória para o modelo não alucinar
+    if (relevant.length === 0) {
+      relevant = speakers.sort(() => 0.5 - Math.random()).slice(0, 15);
     }
+
+    const speakerContext = '\n\n⚠️ ATENÇÃO: Você SOMENTE pode sugerir palestrantes que estejam na lista abaixo. NUNCA invente nomes, cachês ou informações. Se o palestrante pedido não estiver na lista, diga que não o tem na base e que irá buscar as informações.\n\nPALESTRANTES DISPONÍVEIS NA BASE:\n' +
+      relevant.map(formatSpeaker).join('\n');
 
     const systemWithContext = SYSTEM_PROMPT + speakerContext;
 
