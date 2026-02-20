@@ -462,7 +462,7 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
     if (speakerCache) return speakerCache;
     var qResult = await sbClient
       .from('Palestrantes')
-      .select('Nome, "Mini Bio", "Temas/Categorias", "Cachê", Instagram, LinkedIn, "Agência(s)", "URL Perfil"');
+      .select('Nome, "Mini Bio", "Temas/Categorias", Instagram, "Agência(s)", "URL Perfil", "Cachê", "Tier de Mercado", "Observação"');
     if (qResult.error) { console.error('Supabase error:', qResult.error); return []; }
     speakerCache = qResult.data;
     return speakerCache;
@@ -485,8 +485,9 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
 
   // Formatar palestrante para contexto
   function formatSpeaker(s) {
-    const cache = s['Cachê'] ? `R$ ${s['Cachê']}` : 'CACHÊ NÃO DISPONÍVEL NA BASE';
-    return `• NOME: ${s.Nome} | CACHÊ EXATO DA BASE: ${cache} | Temas: ${s['Temas/Categorias'] || '-'} | ${(s['Mini Bio'] || '').substring(0, 120)}`;
+    const cache = s['Cachê'] ? s['Cachê'] : 'NAO DISPONIVEL';
+    const tier = s['Tier de Mercado'] || '';
+    return `• NOME: ${s.Nome} | TIER: ${tier} | CACHE EXATO: ${cache} | Temas: ${s['Temas/Categorias'] || '-'} | ${(s['Mini Bio'] || '').substring(0, 120)}`;
   }
 
   // Detectar nomes próprios na mensagem (palavras com inicial maiúscula, 2+ letras)
