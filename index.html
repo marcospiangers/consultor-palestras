@@ -409,7 +409,7 @@
   var EMAILJS_TEMPLATE = 'template_suld3q8';
   var EMAILJS_PUBLIC   = 'LGrr9Eg3a0LHS2tIg';
 
-  const SYSTEM_PROMPT = `Você é um Consultor de Agendamento de Palestras da Efeito Vírgula, uma agência especializada em palestrantes corporativos.
+  const SYSTEM_PROMPT = `Você é um Consultor de Agendamento de Palestras do Palestrante Ideal, uma agência especializada em palestrantes corporativos.
 
 Seu objetivo é ajudar organizadores de eventos a encontrar o palestrante ideal e estruturar o pedido de forma profissional. Seja profissional e objetivo. Não invente dados. Não pressione o cliente.
 
@@ -485,8 +485,8 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
 
   // Formatar palestrante para contexto
   function formatSpeaker(s) {
-    const cache = s['Cachê'] || 'não informado';
-    return `• ${s.Nome} | Temas: ${s['Temas/Categorias'] || '-'} | Cachê: ${cache} | ${(s['Mini Bio'] || '').substring(0, 150)}`;
+    const cache = s['Cachê'] ? `R$ ${s['Cachê']}` : 'CACHÊ NÃO DISPONÍVEL NA BASE';
+    return `• NOME: ${s.Nome} | CACHÊ EXATO DA BASE: ${cache} | Temas: ${s['Temas/Categorias'] || '-'} | ${(s['Mini Bio'] || '').substring(0, 120)}`;
   }
 
   // Detectar nomes próprios na mensagem (palavras com inicial maiúscula, 2+ letras)
@@ -536,7 +536,7 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
       relevant = [...speakers].sort(() => 0.5 - Math.random()).slice(0, 15);
     }
 
-    const speakerContext = '\n\n⚠️ ATENÇÃO: Você SOMENTE pode sugerir palestrantes que estejam na lista abaixo. NUNCA invente nomes, cachês ou informações. Se o palestrante pedido não estiver na lista abaixo, diga que não o tem na base e que irá buscar as informações e retornar por email.\n\nPALESTRANTES DISPONÍVEIS NA BASE:\n' +
+    const speakerContext = '\n\n⚠️ REGRAS CRÍTICAS SOBRE DADOS:\n1. Você SOMENTE pode sugerir palestrantes cujo NOME apareça exatamente na lista abaixo.\n2. O CACHÊ que você informar DEVE ser exatamente o valor 'CACHÊ EXATO DA BASE' da lista — nunca invente, estime ou arredonde sem ter o valor na lista.\n3. Se o campo cachê for 'CACHÊ NÃO DISPONÍVEL NA BASE', diga que irá buscar o valor e retornar por email.\n4. NUNCA cite um palestrante que não esteja nesta lista.\n\nPALESTRANTES DISPONÍVEIS NA BASE:\n' +
       relevant.map(formatSpeaker).join('\n');
 
     const systemWithContext = SYSTEM_PROMPT + speakerContext;
