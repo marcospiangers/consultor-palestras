@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Efeito Vírgula — Consultor de Palestras</title>
+  <title>Palestrante Ideal</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -366,8 +366,8 @@
 <div class="layout">
   <header>
     <div class="logo">
-      <div class="logo-mark">EV</div>
-      <div class="logo-text">Efeito <span>Vírgula</span></div>
+      <div class="logo-mark">PI</div>
+      <div class="logo-text">Palestrante <span>Ideal</span></div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <div class="header-tag">Consultor de Palestras</div>
@@ -396,7 +396,7 @@
         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
       </button>
     </div>
-    <p class="input-hint">Efeito Vírgula · Consultoria de Palestras Corporativas</p>
+    <p class="input-hint">Palestrante Ideal · Consultoria de Palestras Corporativas</p>
   </div>
 </div>
 
@@ -489,6 +489,31 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
     return `• ${s.Nome} | Temas: ${s['Temas/Categorias'] || '-'} | Cachê: ${cache} | ${(s['Mini Bio'] || '').substring(0, 150)}`;
   }
 
+  // Detectar nomes próprios na mensagem (palavras com inicial maiúscula, 2+ letras)
+  function extractProperNames(text) {
+    const words = text.split(/\s+/);
+    const names = [];
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i].replace(/[^a-zA-ZÀ-ú]/g, '');
+      if (w.length >= 3 && w[0] === w[0].toUpperCase() && w[0] !== w[0].toLowerCase()) {
+        // Juntar até 3 palavras consecutivas com maiúscula para pegar nome completo
+        let name = w;
+        if (i+1 < words.length) {
+          const w2 = words[i+1].replace(/[^a-zA-ZÀ-ú]/g, '');
+          if (w2.length >= 2 && w2[0] === w2[0].toUpperCase()) name += ' ' + w2;
+        }
+        names.push(name);
+      }
+    }
+    return [...new Set(names)];
+  }
+
+  // Busca direta por nome na base
+  function findByName(name, speakers) {
+    const n = name.toLowerCase();
+    return speakers.filter(s => (s['Nome'] || '').toLowerCase().includes(n));
+  }
+
   // ─── OPENROUTER CALL ────────────────────────────────────────────
   async function callAI(userMessage) {
     const speakers = await loadSpeakers();
@@ -497,12 +522,21 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
     const searchText = [userMessage, ...history.slice(-4).map(h => h.parts[0].text)].join(' ');
     var relevant = searchSpeakers(searchText, speakers);
 
+    // Busca específica por nomes próprios mencionados
+    const properNames = extractProperNames(userMessage);
+    properNames.forEach(name => {
+      const found = findByName(name, speakers);
+      found.forEach(s => {
+        if (!relevant.find(r => r.Nome === s.Nome)) relevant.push(s);
+      });
+    });
+
     // Se não achou nada relevante, manda amostra aleatória para o modelo não alucinar
     if (relevant.length === 0) {
-      relevant = speakers.sort(() => 0.5 - Math.random()).slice(0, 15);
+      relevant = [...speakers].sort(() => 0.5 - Math.random()).slice(0, 15);
     }
 
-    const speakerContext = '\n\n⚠️ ATENÇÃO: Você SOMENTE pode sugerir palestrantes que estejam na lista abaixo. NUNCA invente nomes, cachês ou informações. Se o palestrante pedido não estiver na lista, diga que não o tem na base e que irá buscar as informações.\n\nPALESTRANTES DISPONÍVEIS NA BASE:\n' +
+    const speakerContext = '\n\n⚠️ ATENÇÃO: Você SOMENTE pode sugerir palestrantes que estejam na lista abaixo. NUNCA invente nomes, cachês ou informações. Se o palestrante pedido não estiver na lista abaixo, diga que não o tem na base e que irá buscar as informações e retornar por email.\n\nPALESTRANTES DISPONÍVEIS NA BASE:\n' +
       relevant.map(formatSpeaker).join('\n');
 
     const systemWithContext = SYSTEM_PROMPT + speakerContext;
@@ -580,7 +614,7 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
     div.className = `message ${role}`;
     const av = document.createElement('div');
     av.className = `avatar ${role === 'user' ? 'user-av' : 'ai'}`;
-    av.textContent = role === 'user' ? 'V' : 'EV';
+    av.textContent = role === 'user' ? 'V' : 'PI';
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.innerHTML = formatText(text);
@@ -597,7 +631,7 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
     div.className = 'typing';
     div.id = 'typing';
     div.innerHTML = `
-      <div class="avatar ai">EV</div>
+      <div class="avatar ai">PI</div>
       <div class="typing-dots"><span></span><span></span><span></span></div>`;
     chatArea.appendChild(div);
     chatArea.scrollTop = chatArea.scrollHeight;
