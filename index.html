@@ -11,17 +11,18 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0f0b1a;
-      --bg2: #1a1428;
-      --surface: #221b35;
-      --border: rgba(160, 120, 255, 0.15);
-      --accent: #b06aff;
-      --accent2: #7c3aed;
-      --accent-glow: rgba(176, 106, 255, 0.3);
-      --text: #f0eaf8;
-      --text-muted: #8b7fa8;
-      --user-bubble: #2d1f4e;
-      --ai-bubble: #1e1630;
+      --bg: #f5f3ff;
+      --bg2: #ede9fe;
+      --surface: #ffffff;
+      --border: rgba(124, 58, 237, 0.15);
+      --accent: #7c3aed;
+      --accent2: #5b21b6;
+      --accent-glow: rgba(124, 58, 237, 0.2);
+      --text: #1e1030;
+      --text-muted: #6b5b8a;
+      --user-bubble: #7c3aed;
+      --ai-bubble: #ffffff;
+      --yellow: #f59e0b;
     }
 
     html, body {
@@ -29,7 +30,7 @@
       background: var(--bg);
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
-      font-weight: 300;
+      font-weight: 400;
       overflow: hidden;
     }
 
@@ -38,7 +39,7 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      background-image: none;
       pointer-events: none;
       z-index: 0;
     }
@@ -60,7 +61,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 20px 0 16px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(124, 58, 237, 0.12);
       flex-shrink: 0;
     }
 
@@ -194,7 +195,7 @@
     .chip:hover {
       border-color: var(--accent);
       color: var(--accent);
-      background: rgba(176, 106, 255, 0.08);
+      background: rgba(124, 58, 237, 0.06);
     }
 
     /* Messages */
@@ -226,8 +227,8 @@
 
     .avatar.user-av {
       background: var(--user-bubble);
-      border: 1px solid var(--border);
-      color: var(--accent);
+      border: none;
+      color: #ffffff;
     }
 
     .bubble {
@@ -243,13 +244,14 @@
       border: 1px solid var(--border);
       border-top-left-radius: 4px;
       color: var(--text);
+      box-shadow: 0 2px 8px rgba(124,58,237,0.08);
     }
 
     .message.user .bubble {
       background: var(--user-bubble);
-      border: 1px solid rgba(160, 120, 255, 0.25);
+      border: 1px solid rgba(124, 58, 237, 0.3);
       border-top-right-radius: 4px;
-      color: var(--text);
+      color: #ffffff;
     }
 
     .bubble strong { color: var(--accent); font-weight: 600; }
@@ -302,10 +304,11 @@
       align-items: flex-end;
       gap: 10px;
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1.5px solid rgba(124, 58, 237, 0.2);
       border-radius: 16px;
       padding: 10px 10px 10px 16px;
       transition: border-color 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 12px rgba(124,58,237,0.08);
     }
 
     .input-wrapper:focus-within {
@@ -366,7 +369,10 @@
       <div class="logo-mark">EV</div>
       <div class="logo-text">Efeito <span>Vírgula</span></div>
     </div>
-    <div class="header-tag">Consultor de Palestras</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="header-tag">Consultor de Palestras</div>
+      <button id="restartBtn" onclick="restartChat()" style="display:none;background:none;border:1px solid rgba(124,58,237,0.2);color:var(--text-muted);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;padding:4px 10px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='rgba(124,58,237,0.2)';this.style.color='var(--text-muted)'">↺ Recomeçar</button>
+    </div>
   </header>
 
   <div class="chat-area" id="chatArea">
@@ -377,7 +383,7 @@
       <div class="suggestion-chips">
         <div class="chip" onclick="sendChip(this)">Preciso de um palestrante motivacional</div>
         <div class="chip" onclick="sendChip(this)">Evento para empresa em São Paulo</div>
-        <div class="chip" onclick="sendChip(this)">Sugestões de palestrantes para datas especiais</div>
+        <div class="chip" onclick="sendChip(this)">Sugestões para datas especiais</div>
         <div class="chip" onclick="sendChip(this)">Bons palestrantes até R$ 30.000</div>
       </div>
     </div>
@@ -404,23 +410,20 @@
   var EMAILJS_PUBLIC   = 'LGrr9Eg3a0LHS2tIg';
 
   const SYSTEM_PROMPT = `Você é um Consultor de Agendamento de Palestras da Efeito Vírgula, uma agência especializada em palestrantes corporativos.
-Seja profissional e objetivo. Não invente dados. Responda o que o cliente pede e aos poucos peça seu nome e email e telefone, para mandar o orçamento por email. 
-Seu objetivo é ajudar organizadores de eventos a encontrar o palestrante ideal.
+
+Seu objetivo é ajudar organizadores de eventos a encontrar o palestrante ideal e estruturar o pedido de forma profissional. Seja profissional e objetivo. Não invente dados. Não pressione o cliente.
 
 SOBRE OS PALESTRANTES:
-Você tem acesso a uma base com centenas de palestrantes brasileiros. Quando sugerir nomes, use os dados fornecidos. Se o palestrante não estiver na base, sinalize que irá atrás do contato e valor do cachê, e mandará por email. Priorize os palestrantes da agência Efeito Vírgula.
-
+Você tem acesso a uma base com centenas de palestrantes brasileiros. Quando sugerir nomes, use os dados fornecidos. Se o palestrante não estiver na base, sinalize que irá atrás do contato e valor do cachê, e mandará por email.
 
 REGRAS OBRIGATÓRIAS:
-1. Na primeira resposta pergunte o tema do evento. Ao obter o tema, responda indicando palestrantes que atendem o tema. Depois pergunte Data do evento, Local e Investimento disponível. 
-2. Ao informar cachês, cite sempre o valor mais alto disponível no banco de dados, citando "em torno de”, e arredondando o número para um número cheio, terminado em zero. 
-3. Se o cliente ainda não sinalizou o orçamento que dispõe, priorize indicar palestrantes Premium e Super Premium. 
-4. Não faça perguntas que não interessam à formatação do orçamento. 
-5. Se não encontrar o valor do cachê no banco de dados, diga que irá entrar em contato para descobrir e retornar por email (peça o email e todas as informações para fazer a confirmação de orçamento)
-6. Sempre que citar um palestrante ou agência, diga que tem o contato direto e pode negociar diretamente.
-7. Nunca invente dados. Quando não encontrar informações no banco de dados, diga que irá pesquisar e retornar por email.
-8. Busque atender aos pedidos do cliente até que ele esteja satisfeito com os nomes propostos. 
-9. Não avance para a CONFIRMAÇÃO DE ORÇAMENTO sem ter as informações abaixo:
+1. Responda a primeira pergunta normalmente e em seguida peça um resumo do evento que o cliente está planejando.
+2. Ao informar cachês, cite sempre o valor mais alto disponível no banco de dados, citando "em torno de", e arredondando o número para um número cheio, terminado em zero.
+3. Priorize indicar palestrantes Premium e Super Premium, desde que encaixem no orçamento do cliente.
+4. Se não encontrar o valor do cachê no banco de dados, diga que irá entrar em contato para descobrir e retornar por email (peça o email e todas as informações para fazer a confirmação de orçamento).
+5. Sempre que citar um palestrante ou agência, diga que tem o contato direto e pode negociar diretamente.
+
+Depois de indicar palestrantes e obter ok do cliente, avance para a CONFIRMAÇÃO DE ORÇAMENTO preenchendo as informações coletadas ao longo da conversa:
 - Nome, empresa, e-mail e telefone do cliente
 - Data (ou período estimado) do evento e local
 - Resumo do evento
@@ -430,8 +433,9 @@ REGRAS OBRIGATÓRIAS:
 QUANDO TIVER TODAS AS INFORMAÇÕES, apresente:
 
 🔎 CONFIRMAÇÃO DE ORÇAMENTO
-Seu nome:
+
 Empresa:
+Responsável:
 E-mail:
 Telefone:
 Data do evento:
@@ -444,7 +448,7 @@ Depois escreva: "Por favor, revise as informações. Se estiver tudo correto, re
 QUANDO O CLIENTE RESPONDER "CONFIRMO":
 Responda exatamente: "Perfeito. Agora é comigo — vou atrás do seu orçamento completo e te mando e-mail assim que estiver tudo pronto. 🎯"
 
-Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[RESUMO COMPLETO AQUI]##END_EMAIL##`;
+Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[RESUMO COMPLETO AQUI]##END_EMAIL##`;
 
   // ─── STATE ────────────────────────────────────────────────────────
   var sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -547,7 +551,33 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
   const sendBtn  = document.getElementById('sendBtn');
 
   function removeWelcome() {
-    if (welcome && welcome.parentNode) welcome.remove();
+    if (welcome && welcome.parentNode) {
+      welcome.remove();
+      document.getElementById('restartBtn').style.display = 'block';
+    }
+  }
+
+  window.restartChat = function() {
+    history = [];
+    speakerCache = null;
+    chatArea.innerHTML = '';
+    const welcomeDiv = document.createElement('div');
+    welcomeDiv.id = 'welcome';
+    welcomeDiv.className = 'welcome';
+    welcomeDiv.innerHTML = `
+      <div class="welcome-icon">🎤</div>
+      <h1>Encontre o palestrante <span>ideal</span></h1>
+      <p>Sou seu consultor de palestras. Me conte sobre seu evento e vou sugerir os melhores palestrantes para o seu objetivo e orçamento.</p>
+      <div class="suggestion-chips">
+        <div class="chip" onclick="sendChip(this)">Preciso de um palestrante motivacional</div>
+        <div class="chip" onclick="sendChip(this)">Evento para empresa em São Paulo</div>
+        <div class="chip" onclick="sendChip(this)">Sugestões para datas especiais</div>
+        <div class="chip" onclick="sendChip(this)">Bons palestrantes até R$ 30.000</div>
+      </div>`;
+    chatArea.appendChild(welcomeDiv);
+    document.getElementById('restartBtn').style.display = 'none';
+    input.value = '';
+    input.focus();
   }
 
   function appendMessage(role, text) {
