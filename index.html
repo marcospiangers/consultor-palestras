@@ -536,7 +536,7 @@ Em seguida, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[
       relevant = [...speakers].sort(() => 0.5 - Math.random()).slice(0, 15);
     }
 
-    const speakerContext = '\n\n⚠️ REGRAS CRÍTICAS SOBRE DADOS:\n1. Você SOMENTE pode sugerir palestrantes cujo NOME apareça exatamente na lista abaixo.\n2. O CACHÊ que você informar DEVE ser exatamente o valor 'CACHÊ EXATO DA BASE' da lista — nunca invente, estime ou arredonde sem ter o valor na lista.\n3. Se o campo cachê for 'CACHÊ NÃO DISPONÍVEL NA BASE', diga que irá buscar o valor e retornar por email.\n4. NUNCA cite um palestrante que não esteja nesta lista.\n\nPALESTRANTES DISPONÍVEIS NA BASE:\n' +
+    const speakerContext = `\n\n⚠️ REGRAS CRÍTICAS SOBRE DADOS:\n1. Você SOMENTE pode sugerir palestrantes cujo NOME apareça exatamente na lista abaixo.\n2. O CACHE que você informar DEVE ser exatamente o valor CACHE EXATO DA BASE da lista — nunca invente, estime ou arredonde sem ter o valor na lista.\n3. Se o campo cache estiver vazio, diga que irá buscar o valor e retornar por email.\n4. NUNCA cite um palestrante que não esteja nesta lista.\n\nPALESTRANTES DISPONÍVEIS NA BASE:\n` +
       relevant.map(formatSpeaker).join('\n');
 
     const systemWithContext = SYSTEM_PROMPT + speakerContext;
