@@ -9,7 +9,7 @@ export default async function handler(req, res) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${process.env.OPENROUTER_KEY}`,
       'HTTP-Referer': 'https://consultor-palestras.vercel.app',
-      'X-Title': 'Efeito Virgula'
+      'X-Title': 'Palestrante Ideal'
     },
     body: JSON.stringify({
       model: 'google/gemini-2.0-flash-001',
