@@ -396,12 +396,12 @@
 
 <script>
   // ─── CONFIG ───────────────────────────────────────────────────────
-  const SUPABASE_URL = 'https://jmgkaeiynkklbnkgwimb.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_gdIe5v55isrPCHoXFqEuIw_FOPFBRvl';
-  const GEMINI_KEY   = 'AIzaSyBA0GzNoaKUCEN3EtyN1wlJMuMtEk4seXE';
-  const EMAILJS_SERVICE  = 'service_m09nl3n';
-  const EMAILJS_TEMPLATE = 'template_suld3q8';
-  const EMAILJS_PUBLIC   = 'LGrr9Eg3a0LHS2tIg';
+  var SUPABASE_URL = 'https://jmgkaeiynkklbnkgwimb.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_gdIe5v55isrPCHoXFqEuIw_FOPFBRvl';
+  var GEMINI_KEY   = 'AIzaSyBA0GzNoaKUCEN3EtyN1wlJMuMtEk4seXE';
+  var EMAILJS_SERVICE  = 'service_m09nl3n';
+  var EMAILJS_TEMPLATE = 'template_suld3q8';
+  var EMAILJS_PUBLIC   = 'LGrr9Eg3a0LHS2tIg';
 
   const SYSTEM_PROMPT = `Você é um Consultor de Agendamento de Palestras da Efeito Vírgula, uma agência especializada em palestrantes corporativos.
 
@@ -454,7 +454,7 @@ Responda exatamente: "Perfeito. Agora é comigo — vou atrás do seu orçamento
 Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, inclua no final da sua resposta o marcador especial: ##SEND_EMAIL##[RESUMO COMPLETO AQUI]##END_EMAIL##`;
 
   // ─── STATE ────────────────────────────────────────────────────────
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  var sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   emailjs.init(EMAILJS_PUBLIC);
 
   let history = [];
@@ -463,11 +463,11 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
   // ─── LOAD SPEAKERS ────────────────────────────────────────────────
   async function loadSpeakers() {
     if (speakerCache) return speakerCache;
-    const { data, error } = await supabase
+    var result = await sbClient
       .from('Palestrantes')
       .select('Nome, "Mini Bio", "Temas/Categorias", "Cachê", Instagram, LinkedIn, "Agência(s)", "URL Perfil"');
-    if (error) { console.error('Supabase error:', error); return []; }
-    speakerCache = data;
+    if (result.error) { console.error('Supabase error:', result.error); return []; }
+    speakerCache = result.data;
     return data;
   }
 
@@ -600,7 +600,7 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
   }
 
   // ─── SEND MESSAGE ─────────────────────────────────────────────────
-  async function sendMessage() {
+  window.sendMessage = async function() {
     const text = input.value.trim();
     if (!text || sendBtn.disabled) return;
 
@@ -638,7 +638,7 @@ Em seguida, internamente, acione o envio do e-mail com o resumo. Para isso, incl
     input.focus();
   }
 
-  function sendChip(chip) {
+  window.sendChip = function(chip) {
     input.value = chip.textContent;
     sendMessage();
   }
